@@ -1,0 +1,12 @@
+
+<suite name="API Suite" parallel="methods" thread-count="5">
+    <test name="API Tests">
+        <classes>
+            <class name="tests.GetApiTests"/>
+            <class name="tests.PostApiTests"/>
+            <class name="tests.PutApiTests"/>
+            <class name="tests.DeleteApiTests"/>
+            <class name="tests.PatchApiTests"/>
+        </classes>
+    </test>
+</suite>

@@ -1,0 +1,60 @@
+############################################
+# Maven
+############################################
+/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+############################################
+# TestNG Reports
+############################################
+/test-output/
+/reports/
+emailable-report.html
+index.html
+testng-results.xml
+testng-failed.xml
+testng-reports*.css
+testng-reports*.js
+navigator-bullet.png
+bullet_point.png
+collapseall.gif
+skipped.png
+failed.png
+passed.png
+jquery-*.js
+
+############################################
+# Logs
+############################################
+/logs/
+*.log
+
+############################################
+# Eclipse
+############################################
+.classpath
+.project
+.settings/
+.metadata/
+
+############################################
+# IDE (Other - safe to ignore)
+############################################
+.idea/
+*.iml
+
+############################################
+# OS Files
+############################################
+.DS_Store
+Thumbs.db
+
+############################################
+# Generated sources
+############################################
+/generated-test-sources/
+/generated-sources/

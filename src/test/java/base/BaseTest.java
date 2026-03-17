@@ -1,6 +1,9 @@
 package base;
 
+import io.restassured.RestAssured;
+import io.restassured.config.ObjectMapperConfig;
 import io.restassured.specification.RequestSpecification;
+
 import org.apache.logging.log4j.Logger;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
@@ -11,85 +14,100 @@ import utils.LoggerUtils;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.lang.reflect.Method;
 
 public abstract class BaseTest {
 
-    private static ThreadLocal<RequestSpecification> requestSpec = new ThreadLocal<>();
+	private static final ThreadLocal<RequestSpecification> requestSpec = new ThreadLocal<>();
+	private static final ThreadLocal<Logger> logger = new ThreadLocal<>();
+	private static final ThreadLocal<ExtentTest> extentTest = new ThreadLocal<>();
 
-    private static ThreadLocal<Logger> logger = new ThreadLocal<>();
+	private static ExtentReports extent;
 
-    private static ThreadLocal<ExtentTest> extentTest = new ThreadLocal<>();
+	@BeforeSuite(alwaysRun = true)
+	public synchronized void setupReport() {
+		if (extent == null) {
+			extent = ExtentManager.getInstance();
+		}
 
-    private static ExtentReports extent;
+		RestAssured.config = RestAssured.config().objectMapperConfig(
+				ObjectMapperConfig.objectMapperConfig().jackson2ObjectMapperFactory((cls, charset) -> {
+					ObjectMapper mapper = new ObjectMapper();
+					mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+					return mapper;
+				}));
+	}
 
+	@AfterSuite(alwaysRun = true)
+	public void tearDownReport() {
+		if (extent != null) {
+			extent.flush();
+		}
+	}
 
-    @BeforeSuite(alwaysRun = true)
-    public void setupReport() {
-        extent = ExtentManager.getInstance();
-    }
+	@BeforeMethod(alwaysRun = true)
+	public void setup(Method method) {
+		requestSpec.set(RequestSpecFactory.getRequestSpec());
 
+		Logger log = LoggerUtils.getLogger(method.getDeclaringClass());
+		logger.set(log);
 
-    @BeforeMethod(alwaysRun = true)
-    public void setup(Method method) {
+		LoggerUtils.setTestContext(method.getName());
 
-        requestSpec.set(RequestSpecFactory.getRequestSpec());
+		ExtentTest test;
+		synchronized (ExtentManager.class) {
+			test = extent.createTest(method.getDeclaringClass().getSimpleName() + " → " + method.getName());
+		}
+		extentTest.set(test);
 
-        Logger log = LoggerUtils.getLogger(method.getDeclaringClass());
-        logger.set(log);
+		logger.get().info("STARTING TEST: {}", method.getName());
+		extentTest.get().info("STARTING TEST: " + method.getName());
+	}
 
-        ExtentTest test = extent.createTest(method.getName());
-        extentTest.set(test);
+	@AfterMethod(alwaysRun = true)
+	public void tearDown(ITestResult result) {
+		String testName = result.getMethod().getMethodName();
 
-        logger.get().info("STARTING TEST: {}", method.getName());
-        extentTest.get().info("STARTING TEST: " + method.getName());
-    }
+		switch (result.getStatus()) {
+		case ITestResult.SUCCESS:
+			logger.get().info("ENDING TEST: {} - PASSED", testName);
+			extentTest.get().pass("TEST PASSED");
+			break;
 
+		case ITestResult.FAILURE:
+			logger.get().error("ENDING TEST: {} - FAILED | Cause: {}", testName, result.getThrowable().getMessage());
+			extentTest.get().fail(result.getThrowable());
+			break;
 
-    @AfterMethod(alwaysRun = true)
-    public void tearDown(ITestResult result) {
+		case ITestResult.SKIP:
+			logger.get().warn("ENDING TEST: {} - SKIPPED", testName);
+			extentTest.get().skip("TEST SKIPPED");
+			break;
 
-        String testName = result.getMethod().getMethodName();
+		default:
+			logger.get().warn("ENDING TEST: {} - UNKNOWN STATUS ({})", testName, result.getStatus());
+			break;
+		}
 
-        if (result.getStatus() == ITestResult.SUCCESS) {
-            logger.get().info("ENDING TEST: {} - PASSED", testName);
-            extentTest.get().pass("TEST PASSED");
-        }
+		LoggerUtils.clearContext();
 
-        else if (result.getStatus() == ITestResult.FAILURE) {
-            logger.get().error("ENDING TEST: {} - FAILED", testName);
-            extentTest.get().fail(result.getThrowable());
-        }
+		requestSpec.remove();
+		logger.remove();
+		extentTest.remove();
+	}
 
-        else if (result.getStatus() == ITestResult.SKIP) {
-            logger.get().warn("ENDING TEST: {} - SKIPPED", testName);
-            extentTest.get().skip("TEST SKIPPED");
-        }
+	protected RequestSpecification getRequestSpec() {
+		return requestSpec.get();
+	}
 
-        requestSpec.remove();
-        logger.remove();
-        extentTest.remove();
-    }
+	protected ExtentTest getExtentTest() {
+		return extentTest.get();
+	}
 
-
-    @AfterSuite(alwaysRun = true)
-    public void tearDownReport() {
-        if (extent != null) {
-            extent.flush();
-        }
-    }
-
-
-    protected RequestSpecification getRequestSpec() {
-        return requestSpec.get();
-    }
-
-    protected ExtentTest getExtentTest() {
-        return extentTest.get();
-    }
-
-    protected Logger getLogger() {
-        return logger.get();
-    }
+	protected Logger getLogger() {
+		return logger.get();
+	}
 }

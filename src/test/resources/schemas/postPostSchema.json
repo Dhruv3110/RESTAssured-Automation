@@ -1,24 +1,29 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "POST Post Schema",
+  "description": "Schema for the resource returned after POST /posts",
   "type": "object",
   "required": ["userId", "id", "title", "body"],
   "properties": {
     "userId": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 1,
+      "description": "ID of the user who owns the post"
     },
     "id": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 1,
+      "description": "Server-assigned unique post ID (e.g. 101 from JSONPlaceholder)"
     },
     "title": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Post title echoed back from the request"
     },
     "body": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Post body echoed back from the request"
     }
   }
 }

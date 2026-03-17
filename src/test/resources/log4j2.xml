@@ -1,23 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration status="WARN" monitorInterval="30">
 
-    <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout 
-            	pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %c{1} - %msg%n"/>
-        </Console>
+	<Properties>
+		<Property name="LOG_DIR">logs</Property>
+		<Property name="LOG_PATTERN">
+			%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%X{testName}] %-5level %logger{36}
+			- %msg%n
+		</Property>
+	</Properties>
 
-        <File name="FileLogger" fileName="logs/automation.log" append="true">
-            <PatternLayout 
-            	pattern="%d{yyyy-MM-dd HH:mm:ss:SSS} [%t] %-5level %c - %msg%n"/>
-        </File>
-    </Appenders>
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="${LOG_PATTERN}" />
+		</Console>
 
-    <Loggers>
-        <Root level="info">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="FileLogger"/>
-        </Root>
-    </Loggers>
+		<RollingFile name="FileAppender"
+			fileName="${LOG_DIR}/automation.log"
+			filePattern="${LOG_DIR}/automation-%d{yyyy-MM-dd}.log.gz">
+			<PatternLayout pattern="${LOG_PATTERN}" />
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1" modulate="true" />
+				<SizeBasedTriggeringPolicy size="20MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="30" />
+		</RollingFile>
+
+	</Appenders>
+
+	<Loggers>
+		<Logger name="org.apache.http" level="WARN" additivity="false">
+			<AppenderRef ref="Console" />
+			<AppenderRef ref="FileAppender" />
+		</Logger>
+		<Logger name="io.restassured" level="WARN" additivity="false">
+			<AppenderRef ref="Console" />
+			<AppenderRef ref="FileAppender" />
+		</Logger>
+
+		<Root level="INFO">
+			<AppenderRef ref="Console" />
+			<AppenderRef ref="FileAppender" />
+		</Root>
+	</Loggers>
 
 </Configuration>

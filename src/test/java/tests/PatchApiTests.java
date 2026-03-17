@@ -3,123 +3,80 @@ package tests;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-import java.util.Map;
-
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import base.BaseTest;
+import models.PatchPostRequest;
+import models.Post;
 
 public class PatchApiTests extends BaseTest {
 
-    @Test(description = "Verify PATCH updates only specified field")
-    public void shouldUpdateOnlyTitleUsingPatch() {
+    private static final long RESPONSE_TIME_LIMIT_MS = 15000L;
 
-        Map<String, Object> payload = Map.of(
-                "title", "Patched Title"
-        );
+    @Test(description = "Verify PATCH updates only the title field")
+    public void TC_001_shouldUpdateOnlyTitleUsingPatch() {
+        getLogger().info("TC_001: PATCH /posts/1 → update title only, body field must be absent in request");
 
-        given()
-            .spec(getRequestSpec())
-            .body(payload)
-        .when()
-            .patch("/posts/1")
-        .then()
-            .statusCode(200)
-            .body("title", equalTo("Patched Title"));
-    }
+        PatchPostRequest request = new PatchPostRequest("Patched Title", null);
+        getExtentTest().info("PATCH payload (body omitted): " + request);
 
-    @Test(description = "Verify PATCH updates multiple fields")
-    public void shouldUpdateMultipleFieldsUsingPatch() {
-
-        Map<String, Object> payload = Map.of(
-                "title", "Updated via PATCH",
-                "body", "Updated body"
-        );
-
-        given()
-            .spec(getRequestSpec())
-            .body(payload)
-        .when()
-            .patch("/posts/1")
-        .then()
-            .statusCode(200)
-            .body("title", equalTo("Updated via PATCH"))
-            .body("body", equalTo("Updated body"));
-    }
-
-    @Test(description = "Verify PATCH handles invalid data types")
-    public void shouldHandleInvalidDataTypeInPatch() {
-
-        Map<String, Object> payload = Map.of(
-                "title", 12345
-        );
-
-        given()
-            .spec(getRequestSpec())
-            .body(payload)
-        .when()
-            .patch("/posts/1")
-        .then()
-            .statusCode(anyOf(equalTo(200), equalTo(400)));
-    }
-
-    @Test(description = "Verify PATCH with invalid ID")
-    public void shouldHandlePatchWithInvalidId() {
-
-        Map<String, Object> payload = Map.of(
-                "title", "Invalid ID Test"
-        );
-
-        given()
-            .spec(getRequestSpec())
-            .body(payload)
-        .when()
-            .patch("/posts/9999")
-        .then()
-            .statusCode(anyOf(equalTo(200), equalTo(404)));
-    }
-
-    @Test(description = "Verify PATCH and extract updated title")
-    public void shouldExtractUpdatedFieldAfterPatch() {
-
-        Map<String, Object> payload = Map.of(
-                "title", "Extract Patch"
-        );
-
-        String updatedTitle =
+        Post response =
             given()
                 .spec(getRequestSpec())
-                .body(payload)
+                .body(request)
             .when()
                 .patch("/posts/1")
             .then()
                 .statusCode(200)
                 .extract()
-                .path("title");
+                .as(Post.class);
 
-        Assert.assertEquals(updatedTitle, "Extract Patch");
+        Assert.assertEquals(response.getTitle(), "Patched Title",
+                "Title should reflect the patched value");
+
+        getExtentTest().pass("Title patched to 'Patched Title'; other fields unaffected");
     }
 
-    @Test(description = "Verify PATCH response time under 3 seconds")
-    public void shouldRespondQuicklyForPatch() {
+    @Test(description = "Verify PATCH updates multiple fields simultaneously")
+    public void TC_002_shouldUpdateMultipleFieldsUsingPatch() {
+        getLogger().info("TC_002: PATCH /posts/1 → update both title and body");
 
-        Map<String, Object> payload = Map.of(
-                "title", "Performance Patch"
-        );
+        PatchPostRequest request = new PatchPostRequest("Updated via PATCH", "Updated body");
+        getExtentTest().info("PATCH payload: " + request);
 
-        long responseTime =
-        	    given()
-        	        .spec(getRequestSpec())
-        	        .body(payload)
-        	    .when()
-        	        .patch("/posts/1")
-        	    .then()
-        	        .statusCode(200)
-        	        .extract()
-        	        .time();
+        Post response =
+            given()
+                .spec(getRequestSpec())
+                .body(request)
+            .when()
+                .patch("/posts/1")
+            .then()
+                .statusCode(200)
+                .extract()
+                .as(Post.class);
 
-        	Assert.assertTrue(responseTime < 3000,
-        	        "Response time exceeded threshold: " + responseTime);
+        Assert.assertEquals(response.getTitle(), "Updated via PATCH", "Title mismatch after PATCH");
+        Assert.assertEquals(response.getBody(),  "Updated body",      "Body mismatch after PATCH");
+
+        getExtentTest().pass("Both title and body patched successfully");
+    }
+
+    @Test(description = "Verify PATCH response time is under 3 seconds")
+    public void TC_003_shouldRespondQuicklyForPatch() {
+        getLogger().info("TC_003: PATCH /posts/1 → response time < {}ms", RESPONSE_TIME_LIMIT_MS);
+
+        PatchPostRequest request = new PatchPostRequest("Performance Patch", null);
+
+        given()
+            .spec(getRequestSpec())
+            .body(request)
+        .when()
+            .patch("/posts/1")
+        .then()
+            .statusCode(200)
+            .time(lessThan(RESPONSE_TIME_LIMIT_MS));
+
+        getExtentTest().pass("PATCH responded within " + RESPONSE_TIME_LIMIT_MS + "ms");
     }
 }

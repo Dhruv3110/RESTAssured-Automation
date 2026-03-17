@@ -1,12 +1,32 @@
-
-<suite name="API Suite" parallel="methods" thread-count="5">
-    <test name="API Tests">
+<suite name="API Suite"
+       parallel="methods"
+       thread-count="4"
+       data-provider-thread-count="3"
+       verbose="2">
+    <test name="GET API Tests" preserve-order="true">
         <classes>
             <class name="tests.GetApiTests"/>
+        </classes>
+    </test>
+    <test name="POST API Tests" preserve-order="true">
+        <classes>
             <class name="tests.PostApiTests"/>
+        </classes>
+    </test>
+    <test name="PUT API Tests" preserve-order="true">
+        <classes>
             <class name="tests.PutApiTests"/>
-            <class name="tests.DeleteApiTests"/>
+        </classes>
+    </test>
+    <test name="PATCH API Tests" preserve-order="true">
+        <classes>
             <class name="tests.PatchApiTests"/>
         </classes>
     </test>
+    <test name="DELETE API Tests" preserve-order="true">
+        <classes>
+            <class name="tests.DeleteApiTests"/>
+        </classes>
+    </test>
+
 </suite>
